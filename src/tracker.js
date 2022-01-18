@@ -97,9 +97,10 @@ export default async (torrent, cb) => {
   });
 
   let socketIdx = 0;
+  let trackerIdx = 0;
   const sockets = [];
   const conn = setInterval(() => {
-    const tracker = new URL(trackers[socketIdx]);
+    const tracker = new URL(trackers[trackerIdx]);
     try {
       if (tracker.protocol === 'udp:') {
         console.log(`Sending connection request to - ${tracker.hostname}`);
@@ -124,12 +125,13 @@ export default async (torrent, cb) => {
           }
         });
         if (socketIdx > 0) sockets[socketIdx - 1].close();
-        socketIdx = (socketIdx + 1) % (trackers.length + 1);
+        socketIdx = (socketIdx + 1) % (trackers.length);
       } else if (tracker.protocol === 'http:') {
         // TODO
       }
+      trackerIdx = (trackerIdx + 1) % trackers.length;
     } catch (err) {
-      console.log(`Connection to ${tracker.hostname} failed...`);
+      console.log(`Connection to ${tracker.hostname} failed: ${err}`);
     }
   }, 2000);
 };
