@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import { Buffer } from 'buffer';
 import tp from './torrent-parser.js';
 
-const buildHandshake = (torrent) => {
+const buildHandshake = async (torrent) => {
   const buf = Buffer.alloc(20 + 8 + 20 + 20);
 
   // pstrlen
@@ -13,7 +13,8 @@ const buildHandshake = (torrent) => {
   buf.writeUInt32BE(0, 20);
   buf.writeUInt32BE(0, 24);
   // info hash
-  tp.infoHash(torrent).copy(buf, 28);
+  const hash = await tp.infoHash(torrent);
+  hash.copy(buf, 28);
   // peer id
   crypto.randomBytes(20).copy(buf, 48);
 
@@ -75,7 +76,7 @@ const buildHave = (pieceIndex) => {
   // id
   buf.writeUInt8(4, 4);
   // piece index
-  buf.writeInt32BE(pieceIndex, 5);
+  buf.writeUInt32BE(pieceIndex, 5);
 
   return buf;
 };
@@ -97,15 +98,15 @@ const buildRequest = (piece) => {
   const buf = Buffer.alloc(4 + 1 + 4 + 4 + 4);
 
   // len
-  buf.writeUInt32BE(5, 0);
+  buf.writeUInt32BE(13, 0);
   // id
   buf.writeUInt8(6, 4);
   // piece index
-  buf.writeInt32BE(piece.index, 5);
+  buf.writeUInt32BE(piece.index, 5);
   // piece block begin
-  buf.writeInt32BE(piece.begin, 9);
+  buf.writeUInt32BE(piece.begin, 9);
   // piece block length
-  buf.writeInt32BE(piece.length, 13);
+  buf.writeUInt32BE(piece.length, 13);
 
   return buf;
 };
@@ -118,9 +119,9 @@ const buildPiece = (piece) => {
   // id
   buf.writeUInt8(7, 4);
   // piece index
-  buf.writeInt32BE(piece.index, 5);
+  buf.writeUInt32BE(piece.index, 5);
   // piece block begin
-  buf.writeInt32BE(piece.begin, 9);
+  buf.writeUInt32BE(piece.begin, 9);
   // piece block
   piece.block.copy(buf, 13);
 
@@ -135,11 +136,11 @@ const buildCancel = (piece) => {
   // id
   buf.writeUInt8(8, 4);
   // piece index
-  buf.writeInt32BE(piece.index, 5);
+  buf.writeUInt32BE(piece.index, 5);
   // piece begin
-  buf.writeInt32BE(piece.begin, 9);
+  buf.writeUInt32BE(piece.begin, 9);
   // piece length
-  buf.writeInt32BE(piece.length, 13);
+  buf.writeUInt32BE(piece.length, 13);
 
   return buf;
 };

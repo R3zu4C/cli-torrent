@@ -1,7 +1,7 @@
 import dgram from 'dgram';
 import { Buffer } from 'buffer';
 import crypto from 'crypto';
-import * as tp from './torrent-parser.js';
+import tp from './torrent-parser.js';
 
 const buildConnReq = () => {
   const buf = Buffer.alloc(8 + 4 + 4);
@@ -26,7 +26,7 @@ const parseConnResp = (resp) => {
   };
 };
 
-const buildAnnounceReq = (connId, torrent, port = 6881) => {
+const buildAnnounceReq = async (connId, torrent, port = 6881) => {
   const buf = Buffer.alloc(8 + 4 + 4 + 20 + 20 + 8 + 8 + 8 + 4 + 4 + 4 + 4 + 2);
 
   // connection id
@@ -36,7 +36,8 @@ const buildAnnounceReq = (connId, torrent, port = 6881) => {
   // transaction id
   crypto.randomBytes(4).copy(buf, 12);
   // info hash
-  tp.infoHash(torrent).copy(buf, 16);
+  const hash = await tp.infoHash(torrent);
+  hash.copy(buf, 16);
   // peer id
   crypto.randomBytes(20).copy(buf, 36);
   // downloaded
@@ -88,7 +89,7 @@ const respType = (resp) => {
   return 'error';
 };
 
-const getPeers = (torrent, cb) => {
+const getPeers = async (torrent, cb) => {
   const trackers = [];
 
   trackers.push(torrent.announce.toString('utf8'));
@@ -99,7 +100,7 @@ const getPeers = (torrent, cb) => {
   let socketIdx = 0;
   let trackerIdx = 0;
   const sockets = [];
-  const conn = setInterval(() => {
+  const conn = setInterval(async () => {
     const tracker = new URL(trackers[trackerIdx]);
     try {
       if (tracker.protocol === 'udp:') {
@@ -108,10 +109,10 @@ const getPeers = (torrent, cb) => {
         sockets.push(socket);
         const msg = buildConnReq();
         socket.send(msg, 0, msg.length, tracker.port, tracker.hostname, () => {});
-        socket.on('message', (response) => {
+        socket.on('message', async (response) => {
           if (respType(response) === 'connect') {
             const connResp = parseConnResp(response);
-            const announceReq = buildAnnounceReq(connResp.connectionId, torrent);
+            const announceReq = await buildAnnounceReq(connResp.connectionId, torrent);
             socket.send(announceReq, 0, announceReq.length, tracker.port, tracker.hostname, () => {});
           } else if (respType(response) === 'announce') {
             const announceResp = parseAnnounceResp(response);

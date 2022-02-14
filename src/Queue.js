@@ -37,6 +37,6 @@ export default class {
   }
 
   isEmpty() {
-    return (this.#queue.length() === 0);
+    return (this.#queue.length === 0);
   }
 }

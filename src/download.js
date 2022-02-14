@@ -16,12 +16,12 @@ const getWholeMsg = (socket, cb) => {
 
     const msgLen = () => {
       if (handshake) return savedBuf.readUInt8(0) + 49;
-      return savedBuf.readUInt8(0) + 4;
+      return savedBuf.readInt32BE(0) + 4;
     };
 
-    if (savedBuf.length >= msgLen()) {
+    while (savedBuf.length >= 4 && savedBuf.length >= msgLen()) {
       cb(savedBuf.slice(0, msgLen()));
-      savedBuf.slice(msgLen());
+      savedBuf = savedBuf.slice(msgLen());
       handshake = false;
     }
   });
@@ -38,7 +38,7 @@ const requestPiece = (socket, pieces, queue) => {
       break;
     }
   }
-}
+};
 
 const chokeHandler = (socket) => {
   socket.end();
@@ -68,7 +68,7 @@ const bitfieldHandler = (socket, pieces, queue, payload) => {
 };
 
 const pieceHandler = (socket, pieces, queue, torrent, file, payload) => {
-  console.log(payload);
+  pieces.printPercentDone();
   pieces.addReceived(payload);
 
   const offset = payload.index * torrent.info['piece length'] + payload.begin;
@@ -83,7 +83,7 @@ const pieceHandler = (socket, pieces, queue, torrent, file, payload) => {
   }
 };
 
-const isHandshake = (msg) => msg.length === msg.readUInt8(0) + 49 && msg.toString('utf8', 1) === 'BitTorrent protocol';
+const isHandshake = (msg) => msg.length === msg.readUInt8(0) + 49 && msg.toString('utf8', 1, 20) === 'BitTorrent protocol';
 
 const msgHandler = (socket, msg, pieces, queue, torrent, file) => {
   if (isHandshake(msg)) socket.write(message.buildInterested());
@@ -103,8 +103,9 @@ const download = (peer, torrent, pieces, file) => {
 
   socket.on('error', console.log);
 
-  socket.connect(peer.port, peer.ip, () => {
-    socket.write(message.buildHandshake(torrent));
+  socket.connect(peer.port, peer.ip, async () => {
+    const handshake = await message.buildHandshake(torrent);
+    socket.write(handshake);
   });
 
   const queue = new Queue(torrent);
