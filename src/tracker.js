@@ -88,7 +88,7 @@ const respType = (resp) => {
   return 'error';
 };
 
-export default (torrent, cb) => {
+const getPeers = (torrent, cb) => {
   const trackers = [];
 
   trackers.push(torrent.announce.toString('utf8'));
@@ -135,3 +135,5 @@ export default (torrent, cb) => {
     }
   }, 2000);
 };
+
+export default { getPeers };
