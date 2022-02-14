@@ -1,24 +1,41 @@
+import tp from './torrent-parser.js';
+
 export default class {
-  constructor(size) {
-    this.requested = new Array(size).fill(false);
-    this.recieved = new Array(size).fill(false);
+  #requested;
+
+  #recieved;
+
+  constructor(torrent) {
+    const buildPieceArray = () => {
+      const nPieces = torrent.info.length / 20; // torrent.info.pieces contains the 20 Byte SHA-1 hash of each piece, hence total length divided by 20.
+      const arr = Array(nPieces).fill().map((_, i) => Array(tp.blocksPerPiece(torrent, i)).fill(false));
+      return arr;
+    };
+
+    this.#requested = buildPieceArray();
+    this.#recieved = buildPieceArray();
   }
 
-  addRequested(pieceIndex) {
-    this.requested[pieceIndex] = true;
+  addRequested(pieceBlock) {
+    const blockIndex = pieceBlock.index / tp.BLOCK_LEN;
+    this.#requested[pieceBlock.index][blockIndex] = true;
   }
 
-  addRecieved(pieceIndex) {
-    this.recieved[pieceIndex] = true;
+  addRecieved(pieceBlock) {
+    const blockIndex = pieceBlock.index / tp.BLOCK_LEN;
+    this.#recieved[pieceBlock.index][blockIndex] = true;
   }
 
-  isRequireed(pieceIndex) {
-    if (this.requested.every((pi) => pi === true)) this.requested = this.recieved.slice();
+  isRequired(pieceBlock) {
+    if (this.#requested.every((blocks) => blocks.every((i) => i === true))) {
+      this.#requested = this.#recieved.map((blocks) => blocks.slice());
+    }
 
-    return !(this.requested[pieceIndex]);
+    const blockIndex = pieceBlock.index / tp.BLOCK_LEN;
+    return !(this.#requested[pieceBlock.index][blockIndex]);
   }
 
   isDone() {
-    return this.requested.every((pi) => pi === true);
+    return this.#requested.every((blocks) => blocks.every((i) => i === true));
   }
 }
