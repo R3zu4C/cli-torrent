@@ -31,6 +31,11 @@ const requestPiece = (socket, pieces, queue) => {
 
   while (queue.length()) {
     const pieceBlock = queue.dequeue();
+    if (pieces.isRequired(pieceBlock)) {
+      socket.write(message.buildRequest(pieceBlock));
+      pieces.addRequested(pieceBlock);
+      break;
+    }
   }
 }
 
