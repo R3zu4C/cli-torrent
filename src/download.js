@@ -44,14 +44,27 @@ const chokeHandler = (socket) => {
 };
 
 const unchokeHandler = (socket, pieces, queue) => {
-  /* eslint no-param-reassign: ["error", { "props": false }] */
   queue.choked = false;
   requestPiece(socket, pieces, queue);
 };
 
-const haveHandler = (payload) => {};
+const haveHandler = (socket, pieces, queue, payload) => {
+  const requestFlag = queue.isEmpty();
+  const pieceIndex = payload.readUInt32BE(0);
+  queue.queue(pieceIndex);
+  if (requestFlag) requestPiece(socket, pieces, queue);
+};
 
-const bitfieldHandler = (payload) => {};
+const bitfieldHandler = (socket, pieces, queue, payload) => {
+  const requestFlag = queue.isEmpty();
+  payload.forEach((byte, i) => {
+    for (let j = 0; j < 8; j += 1) {
+      if (byte % 2) queue.queue((i * 8) + (7 - j));
+      byte = Math.floor(byte / 2);
+    }
+  });
+  if (requestFlag) requestPiece(socket, pieces, queue);
+};
 
 const pieceHandler = (payload) => {};
 
@@ -63,9 +76,9 @@ const msgHandler = (socket, msg, pieces, queue) => {
     const m = message.msgParse(msg);
 
     if (m.id === 0) chokeHandler(socket);
-    if (m.id === 1) unchokeHandler();
-    if (m.id === 4) haveHandler(m.payload);
-    if (m.id === 5) bitfieldHandler(m.payload);
+    if (m.id === 1) unchokeHandler(socket, pieces, queue);
+    if (m.id === 4) haveHandler(socket, pieces, queue, m.payload);
+    if (m.id === 5) bitfieldHandler(socket, pieces, queue, m.payload);
     if (m.id === 7) pieceHandler(m.payload);
   }
 };

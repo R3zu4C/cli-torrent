@@ -35,4 +35,8 @@ export default class {
   length() {
     return this.#queue.length;
   }
+
+  isEmpty() {
+    return (this.#queue.length() === 0);
+  }
 }
