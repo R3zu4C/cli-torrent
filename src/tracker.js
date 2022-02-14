@@ -4,7 +4,7 @@ import crypto from 'crypto';
 import * as tp from './torrent-parser.js';
 
 const buildConnReq = () => {
-  const buf = Buffer.alloc(16);
+  const buf = Buffer.alloc(8 + 4 + 4);
 
   // connection id
   buf.writeUInt32BE(0x417, 0);
@@ -27,7 +27,7 @@ const parseConnResp = (resp) => {
 };
 
 const buildAnnounceReq = (connId, torrent, port = 6881) => {
-  const buf = Buffer.alloc(98);
+  const buf = Buffer.alloc(8 + 4 + 4 + 20 + 20 + 8 + 8 + 8 + 4 + 4 + 4 + 4 + 2);
 
   // connection id
   connId.copy(buf, 0);
@@ -88,7 +88,7 @@ const respType = (resp) => {
   return 'error';
 };
 
-export default async (torrent, cb) => {
+export default (torrent, cb) => {
   const trackers = [];
 
   trackers.push(torrent.announce.toString('utf8'));
