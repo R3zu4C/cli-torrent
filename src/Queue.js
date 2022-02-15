@@ -1,42 +1,37 @@
 import tp from './torrent-parser.js';
 
 export default class {
-  #torrent;
-
-  #queue;
-
   constructor(torrent) {
-    this.#torrent = torrent;
-    this.#queue = [];
+    this._torrent = torrent;
+    this._queue = [];
     this.choked = true;
   }
 
   queue(pieceIndex) {
-    const nBlocks = tp.blocksPerPiece(this.#torrent, pieceIndex);
+    const nBlocks = tp.blocksPerPiece(this._torrent, pieceIndex);
     for (let i = 0; i < nBlocks; i += 1) {
       const pieceBlock = {
         index: pieceIndex,
         begin: i * tp.BLOCK_LEN,
-        length: tp.blockLen(this.#torrent, pieceIndex, i),
+        length: tp.blockLen(this._torrent, pieceIndex, i),
       };
-
-      this.#queue.push(pieceBlock);
+      this._queue.push(pieceBlock);
     }
   }
 
   dequeue() {
-    return this.#queue.shift();
+    return this._queue.shift();
   }
 
   peek() {
-    return this.#queue[0];
+    return this._queue[0];
   }
 
   length() {
-    return this.#queue.length;
+    return this._queue.length;
   }
 
   isEmpty() {
-    return (this.#queue.length === 0);
+    return (this._queue.length === 0);
   }
 }

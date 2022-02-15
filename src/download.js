@@ -50,14 +50,14 @@ const unchokeHandler = (socket, pieces, queue) => {
 };
 
 const haveHandler = (socket, pieces, queue, payload) => {
-  const requestFlag = queue.isEmpty();
+  const requestFlag = queue.length === 0;
   const pieceIndex = payload.readUInt32BE(0);
   queue.queue(pieceIndex);
   if (requestFlag) requestPiece(socket, pieces, queue);
 };
 
 const bitfieldHandler = (socket, pieces, queue, payload) => {
-  const requestFlag = queue.isEmpty();
+  const requestFlag = queue.length === 0;
   payload.forEach((byte, i) => {
     for (let j = 0; j < 8; j += 1) {
       if (byte % 2) queue.queue((i * 8) + (7 - j));
@@ -86,6 +86,7 @@ const pieceHandler = (socket, pieces, queue, torrent, file, payload) => {
 const isHandshake = (msg) => msg.length === msg.readUInt8(0) + 49 && msg.toString('utf8', 1, 20) === 'BitTorrent protocol';
 
 const msgHandler = (socket, msg, pieces, queue, torrent, file) => {
+  console.log(queue.peek());
   if (isHandshake(msg)) socket.write(message.buildInterested());
   else {
     const m = message.msgParse(msg);
